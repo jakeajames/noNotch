@@ -20,7 +20,7 @@ status.foregroundColor = [UIColor whiteColor];
 CGRect frame = CGRectMake(0, 0, 375, 44);
 
 UIView *newStatus = [[UIView alloc] initWithFrame:frame];
-newStatus.layer.cornerRadius = 20;
+newStatus.layer.cornerRadius = 20; //optional
 newStatus.layer.masksToBounds = YES;
 [newStatus setBackgroundColor:[UIColor blackColor]];
 
