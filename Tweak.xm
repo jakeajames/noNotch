@@ -11,6 +11,9 @@
 %hook UIStatusBarWindow
 -(void)layoutSubviews {
 %orig;
+//could have as well just changed background color of current status bar, but this way I have more freedom to customize, i.e add cornerRadius
+//ik formatting sucks
+
 UIStatusBar *status = MSHookIvar<UIStatusBar *>(self, "_statusBar");
 status.foregroundColor = [UIColor whiteColor];
 
@@ -20,6 +23,7 @@ UIView *newStatus = [[UIView alloc] initWithFrame:frame];
 newStatus.layer.cornerRadius = 20;
 newStatus.layer.masksToBounds = YES;
 [newStatus setBackgroundColor:[UIColor blackColor]];
+
 [self addSubview:newStatus];
 [self bringSubviewToFront:status];
 
