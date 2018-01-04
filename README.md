@@ -2,7 +2,8 @@
 Remove the notch from iPhone X
 
 # Issues
-1. Issues?
+1. Doesn't show *while* opening the cover sheet
+2. Doesn't show in CC
 
 # HOW TO INSTALL
 1. Buy iPhone X on 11.0-11.1.2
