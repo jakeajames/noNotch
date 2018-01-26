@@ -1,7 +1,8 @@
 include $(THEOS)/makefiles/common.mk
 
-export TARGET = simulator:clang
-ARCHS = x86_64
+#export TARGET = simulator:clang
+#ARCHS = x86_64
+ARCHS = arm64
 
 TWEAK_NAME = noNotch
 noNotch_FILES = Tweak.xm
