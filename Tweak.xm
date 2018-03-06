@@ -23,7 +23,7 @@
 - (void)layoutSubviews
 {
     CGRect wholeFrame = [UIScreen mainScreen].bounds; //whole screen
-    CGRect frame = CGRectMake(-34, 0, wholeFrame.size.width+68, wholeFrame.size.height+200); //this is the border which will cover the notch
+    CGRect frame = CGRectMake(-50, -16, wholeFrame.size.width+100, wholeFrame.size.height+200); //this is the border which will cover the notch
     
     if (!self.noNotchW) {
         self.noNotchW = [[UIWindow alloc] initWithFrame:wholeFrame]; //whole screen size goes to the window
@@ -33,19 +33,20 @@
         self.noNotch = [[UIView alloc] initWithFrame:frame]; //the notch view
     }
     self.noNotch.layer.borderColor = [UIColor blackColor].CGColor; //add a black border
-    self.noNotch.layer.borderWidth = 34.0f; //something thinner than the status bar
+    self.noNotch.layer.borderWidth = 50.0f; //something thinner than the status bar
     
     [self.noNotch setClipsToBounds:YES]; //we want the border to be round
     [self.noNotch.layer setMasksToBounds:YES]; //^^
     self.noNotch.layer.cornerRadius = 68; //corner radius
     
-    self.noNotchW.windowLevel = self.windowLevel - 1.0f; //make this be under the status bar
+    self.noNotchW.windowLevel = 1096; //theoretically above the CC, while for some reason on the simulator it just resets to 998
     self.noNotchW.hidden = NO; //we don't want it hidden for whatever reason
     self.noNotchW.userInteractionEnabled = NO; //we don't want our view to prevent touches
     [self.noNotchW addSubview:self.noNotch]; //add our notch cover!
     
     UIStatusBar_Base *statusBar = [self valueForKey:@"_statusBar"];
     statusBar.tag = 4141411337; //tag SpringBoard's status bar so it's never hidden, TODO: fix two status bars in landscape mode
+    [self.noNotchW addSubview:statusBar];
     
     %orig; //make SpringBoard do whatever it was gonna do before we kicked in and stole the notch
 }
