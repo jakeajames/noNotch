@@ -8,6 +8,8 @@ Remove the notch from iPhone X
 
 # TODO
 - Fix double status bar in landscape apps
+- Hide notch cover on full screen apps and while watching videos
+- Select which apps to enable this on via Settings
 - Fix bugs real iPhone X users have?
 
 # HOW TO INSTALL
