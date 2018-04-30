@@ -1,7 +1,7 @@
 # noNotch
 Hide the notch with a nice black border on iPhone X.
 
-Made @Jakeashacks. Minor contributions by @LaughingQuoll. A lot of credits go to http://iphonedevwiki.com for their awesome documentation on iOS's internal methods. The tweak is heavily commented and I hope beginner devs learn something from this :) (If you do, check out my other projects!)
+Made @Jakeashacks. Minor contributions by @LaughingQuoll. A lot of credits go to http://iphonedevwiki.net for their awesome documentation on iOS's internal methods. The tweak is heavily commented and I hope beginner devs learn something from this :) (If you do, check out my other projects!)
 
 Feel free to ask any questions on Twitter and to report bugs using the "Issues" tab.
 
