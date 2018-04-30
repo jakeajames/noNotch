@@ -1,16 +1,24 @@
 # noNotch
-Remove the notch from iPhone X
+Hide the notch with a nice black border on iPhone X.
+
+Made @Jakeashacks. Minor contributions by @LaughingQuoll. A lot of credits go to http://iphonedevwiki.com for their awesome documentation on iOS's internal methods. The tweak is heavily commented and I hope beginner devs learn something from this :) (If you do, check out my other projects!)
+
+Feel free to ask any questions on Twitter and to report bugs using the "Issues" tab.
 
 # Changelog
 - Fixed interaction with status bar (TapTapUtils still doesn't seem to work but screen recording and personal hotspot do)
 - Fixed double status bar on control center
 - Can now click "Done" button when in wiggle mode
+- Landscape apps don't have two status bars anymore
 
 # TODO
-- Fix double status bar in landscape apps
 - Hide notch cover on full screen apps and while watching videos
+- Settings pane
 - Select which apps to enable this on via Settings
 - Fix bugs real iPhone X users have?
 
 # HOW TO INSTALL
 1. Get it off BigBoss or jakeashacks.com/cydia
+
+# Wanna compile this yourself?
+No worries! Theos Installer is available on jakeashacks.com/cydia and supports iOS 11. You can use that to install theos with one click! To compile just download this somewhere, 'cd' into it and run 'make clean package' 
