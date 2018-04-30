@@ -6,39 +6,50 @@
 UIWindow *noNotchW; //window which will contain everything
 UIView *noNotch; //the black border which will cover the notch
 UIView *cover; //a supporting view which will help us hide and show the status bar
+UIAccelerometer *accelerometer;
+UIInterfaceOrientation oldOrientation;
 
 //our hide and show methods. Add a nice transition
 void hide() {
     [UIView animateWithDuration:1.0 animations:^(void) {
-        noNotchW.alpha = 1;
+        noNotchW.alpha = noNotchW.alpha;
         noNotchW.alpha = 0;
     }];
 }
 void show() {
     [UIView animateWithDuration:1.0 animations:^(void) {
-        noNotchW.alpha = 0;
+        noNotchW.alpha = noNotchW.alpha;
         noNotchW.alpha = 1;
     }];
 }
 void hideSB() {
     [UIView animateWithDuration:1.0 animations:^(void) {
-        cover.alpha = 1;
+        cover.alpha = cover.alpha;
         cover.alpha = 0;
     }];
 }
 void showSB() {
+    if (oldOrientation != 1) return;
     [UIView animateWithDuration:1.0 animations:^(void) {
-        cover.alpha = 0;
+        cover.alpha = cover.alpha;
         cover.alpha = 1;
     }];
 }
 
+@interface UIApplication ()
+-(int)activeInterfaceOrientation;
+@end
+
 @interface UIStatusBarWindow : UIWindow
+@end
+
+@interface UIStatusBarWindow () <UIAccelerometerDelegate>
 @end
 
 @interface _UIStatusBar : UIView
 @property (nonatomic, retain) UIColor *foregroundColor;
 @end
+
 
 %hook UIStatusBarWindow
 
@@ -76,7 +87,26 @@ void showSB() {
     [cover addSubview:(UIView*)statusBar]; //add status bar inside our supporting view
     [noNotchW addSubview:cover]; //add supporting view inside the window
     
+    //start listening for orientation changes
+    if (!accelerometer) {
+        accelerometer = [UIAccelerometer sharedAccelerometer];
+        accelerometer.updateInterval = 0.5; //listen every half a second
+        accelerometer.delegate = self;
+    }
+    
     %orig; //make SpringBoard do whatever it was gonna do before we kicked in and stole the notch
+}
+
+%new
+- (void)accelerometer:(UIAccelerometer *)meter didAccelerate:(UIAcceleration *)acceleration {
+    //if old orientation isn't equal to current orientation => orientation changed
+    if (oldOrientation != [[%c(SpringBoard) sharedApplication] activeInterfaceOrientation]) {
+        oldOrientation = [[%c(SpringBoard) sharedApplication] activeInterfaceOrientation];
+        if (oldOrientation == 1 && cover.alpha != 1)
+            showSB();
+        else if (oldOrientation != 1 && cover.alpha != 0)
+            hideSB();
+    }
 }
 
 %end
@@ -122,7 +152,7 @@ void showSB() {
 %end
 
 //when we open an app make sure the notch cover is visible
-%hook SpringBoard
+/*%hook SpringBoard
 -(void)frontDisplayDidChange:(id)newDisplay {
     %orig;
     
@@ -134,7 +164,7 @@ void showSB() {
     }
     
 }
-%end
+%end*/
 //when control center is opened hide the status bar
 %hook SBControlCenterController
 -(void)presentAnimated:(BOOL)arg1 {
@@ -168,4 +198,5 @@ void showSB() {
     return %orig;
 }
 %end
+
 
