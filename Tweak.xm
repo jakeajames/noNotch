@@ -2,13 +2,36 @@
 #include <UIKit/UIStatusBar.h>
 #import <CoreGraphics/CoreGraphics.h>
 #include <SpringBoard/SpringBoard.h>
-#include <AppSupport/CPDistributedMessagingCenter.h>
 
 UIWindow *noNotchW; //window which will contain everything
 UIView *noNotch; //the black border which will cover the notch
 UIView *cover; //a supporting view which will help us hide and show the status bar
-CPDistributedMessagingCenter *messagingCenter; //message center
 
+//our hide and show methods. Add a nice transition
+void hide() {
+    [UIView animateWithDuration:1.0 animations:^(void) {
+        noNotchW.alpha = 1;
+        noNotchW.alpha = 0;
+    }];
+}
+void show() {
+    [UIView animateWithDuration:1.0 animations:^(void) {
+        noNotchW.alpha = 0;
+        noNotchW.alpha = 1;
+    }];
+}
+void hideSB() {
+    [UIView animateWithDuration:1.0 animations:^(void) {
+        cover.alpha = 1;
+        cover.alpha = 0;
+    }];
+}
+void showSB() {
+    [UIView animateWithDuration:1.0 animations:^(void) {
+        cover.alpha = 0;
+        cover.alpha = 1;
+    }];
+}
 
 @interface UIStatusBarWindow : UIWindow
 @end
@@ -28,13 +51,6 @@ CPDistributedMessagingCenter *messagingCenter; //message center
     CGRect frame = CGRectMake(-50, -16, wholeFrame.size.width+100, wholeFrame.size.height+200); //this is the border which will cover the notch
     
     if (!noNotchW) {
-        //we're gonna use a message center to hide and show views from other classes
-        [messagingCenter runServerOnCurrentThread];
-        [messagingCenter registerForMessageName:@"hide" target:self selector:@selector(hide:)];
-        [messagingCenter registerForMessageName:@"show" target:self selector:@selector(show:)];
-        [messagingCenter registerForMessageName:@"hideSB" target:self selector:@selector(hideSB:)];
-        [messagingCenter registerForMessageName:@"showSB" target:self selector:@selector(showSB:)];
-        
         noNotchW = [[UIWindow alloc] initWithFrame:sbFrame]; //window will be as small as the status bar
         cover = [[UIView alloc] initWithFrame:sbFrame]; //the support view
     }
@@ -57,42 +73,14 @@ CPDistributedMessagingCenter *messagingCenter; //message center
     
     [noNotchW addSubview:noNotch]; //add the notch cover inside the window
     UIStatusBar_Base *statusBar = [self valueForKey:@"_statusBar"];
-    [cover addSubview:statusBar]; //add status bar inside our supporting view
+    [cover addSubview:(UIView*)statusBar]; //add status bar inside our supporting view
     [noNotchW addSubview:cover]; //add supporting view inside the window
     
     %orig; //make SpringBoard do whatever it was gonna do before we kicked in and stole the notch
 }
 
-//our hide and show methods. Add a nice transition
-%new
-- (void)hide:(NSString *)name {
-    [UIView animateWithDuration:1.0 animations:^(void) {
-        noNotchW.alpha = 1;
-        noNotchW.alpha = 0;
-    }];
-}
-%new
-- (void)show:(NSString *)name {
-    [UIView animateWithDuration:1.0 animations:^(void) {
-        noNotchW.alpha = 0;
-        noNotchW.alpha = 1;
-    }];
-}
-%new
-- (void)hideSB:(NSString *)name {
-    [UIView animateWithDuration:1.0 animations:^(void) {
-        cover.alpha = 1;
-        cover.alpha = 0;
-    }];
-}
-%new
-- (void)showSB:(NSString *)name {
-    [UIView animateWithDuration:1.0 animations:^(void) {
-        cover.alpha = 0;
-        cover.alpha = 1;
-    }];
-}
 %end
+
 //status bar window always visible
 %hook UIStatusBarWindow
 -(void)setHidden:(BOOL)arg1 {
@@ -106,7 +94,7 @@ CPDistributedMessagingCenter *messagingCenter; //message center
     //if the system wants to show the status bar make sure the notch cover window is also there
     if (arg1 == 1) {
         if (noNotchW.alpha == 0)
-            [messagingCenter sendMessageName:@"show" userInfo:nil];
+            show();
     }
     %orig(1);
 }
@@ -140,9 +128,9 @@ CPDistributedMessagingCenter *messagingCenter; //message center
     
     if ([newDisplay isKindOfClass:%c(SBApplication)]) {
         if (cover.alpha == 0)
-            [messagingCenter sendMessageName:@"showSB" userInfo:nil];
+            showSB();
         if (noNotchW.alpha == 0)
-            [messagingCenter sendMessageName:@"show" userInfo:nil];
+            show();
     }
     
 }
@@ -151,23 +139,23 @@ CPDistributedMessagingCenter *messagingCenter; //message center
 %hook SBControlCenterController
 -(void)presentAnimated:(BOOL)arg1 {
     if (cover.alpha != 0)
-        [messagingCenter sendMessageName:@"hideSB" userInfo:nil];
+        hideSB();
     %orig;
 }
 -(void)presentAnimated:(BOOL)arg1 completion:(id)arg2 {
     if (cover.alpha != 0)
-        [messagingCenter sendMessageName:@"hideSB" userInfo:nil];
+        hideSB();
     %orig;
 }
 //when control center is dismissed show the status bar
 -(void)dismissAnimated:(BOOL)arg1 {
     if (cover.alpha == 0)
-        [messagingCenter sendMessageName:@"showSB" userInfo:nil];
+        showSB();
     %orig;
 }
 -(void)dismissAnimated:(BOOL)arg1 completion:(id)arg2 {
     if (cover.alpha == 0)
-        [messagingCenter sendMessageName:@"showSB" userInfo:nil];
+        showSB();
     %orig;
 }
 %end
@@ -176,13 +164,8 @@ CPDistributedMessagingCenter *messagingCenter; //message center
 %hook SBEditingDoneButton
 -(id)initWithFrame:(CGRect)arg1 {
     if (noNotchW.alpha != 0)
-        [messagingCenter sendMessageName:@"hide" userInfo:nil];
+        hide();
     return %orig;
 }
 %end
-
-//setup our message center
-%ctor {
-    messagingCenter = [CPDistributedMessagingCenter centerNamed:@"com.jakeashacks.noNotch"];
-}
 
