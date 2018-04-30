@@ -2,14 +2,15 @@
 #include <UIKit/UIStatusBar.h>
 #import <CoreGraphics/CoreGraphics.h>
 #include <SpringBoard/SpringBoard.h>
+#include <AppSupport/CPDistributedMessagingCenter.h>
+
+UIWindow *noNotchW; //window which will contain everything
+UIView *noNotch; //the black border which will cover the notch
+UIView *cover; //a supporting view which will help us hide and show the status bar
+CPDistributedMessagingCenter *messagingCenter; //message center
+
 
 @interface UIStatusBarWindow : UIWindow
-@property (nonatomic, assign) UIWindow *noNotchW;
-@property (nonatomic, assign) UIView *noNotch; //add a new UIWindow property (Call it something unique so it doesnt mess with any other tweaks)
-@end
-
-@interface UIStatusBar_Base : UIView
--(int)currentStyle;
 @end
 
 @interface _UIStatusBar : UIView
@@ -17,56 +18,105 @@
 @end
 
 %hook UIStatusBarWindow
-%property (nonatomic, assign) UIWindow *noNotchW;
-%property (nonatomic, assign) UIView *noNotch; //add a new UIWindow property
 
 - (void)layoutSubviews
 {
+    
     CGRect wholeFrame = [UIScreen mainScreen].bounds; //whole screen
+    CGRect sbFrame = wholeFrame;
+    sbFrame.size.height = 32;
     CGRect frame = CGRectMake(-50, -16, wholeFrame.size.width+100, wholeFrame.size.height+200); //this is the border which will cover the notch
     
-    if (!self.noNotchW) {
-        self.noNotchW = [[UIWindow alloc] initWithFrame:wholeFrame]; //whole screen size goes to the window
+    if (!noNotchW) {
+        //we're gonna use a message center to hide and show views from other classes
+        [messagingCenter runServerOnCurrentThread];
+        [messagingCenter registerForMessageName:@"hide" target:self selector:@selector(hide:)];
+        [messagingCenter registerForMessageName:@"show" target:self selector:@selector(show:)];
+        [messagingCenter registerForMessageName:@"hideSB" target:self selector:@selector(hideSB:)];
+        [messagingCenter registerForMessageName:@"showSB" target:self selector:@selector(showSB:)];
+        
+        noNotchW = [[UIWindow alloc] initWithFrame:sbFrame]; //window will be as small as the status bar
+        cover = [[UIView alloc] initWithFrame:sbFrame]; //the support view
     }
     
-    if (!self.noNotch) {
-        self.noNotch = [[UIView alloc] initWithFrame:frame]; //the notch view
+    if (!noNotch) {
+        noNotch = [[UIView alloc] initWithFrame:frame]; //the notch view
     }
-    self.noNotch.layer.borderColor = [UIColor blackColor].CGColor; //add a black border
-    self.noNotch.layer.borderWidth = 50.0f; //something thinner than the status bar
+    noNotch.layer.borderColor = [UIColor blackColor].CGColor; //add a black border
+    noNotch.layer.borderWidth = 50.0f; //something thinner than the status bar
     
-    [self.noNotch setClipsToBounds:YES]; //we want the border to be round
-    [self.noNotch.layer setMasksToBounds:YES]; //^^
-    self.noNotch.layer.cornerRadius = 68; //corner radius
+    [noNotch setClipsToBounds:YES]; //we want the border to be round
+    [noNotch.layer setMasksToBounds:YES]; //^^
+    noNotch.layer.cornerRadius = 70; //corner radius
     
-    self.noNotchW.windowLevel = 1096; //theoretically above the CC, while for some reason on the simulator it just resets to 998
-    self.noNotchW.hidden = NO; //we don't want it hidden for whatever reason
-    self.noNotchW.userInteractionEnabled = NO; //we don't want our view to prevent touches
-    [self.noNotchW addSubview:self.noNotch]; //add our notch cover!
+    noNotchW.windowLevel = 1096;
+    noNotchW.hidden = NO; //we don't want it hidden for whatever reason
+    noNotchW.userInteractionEnabled = YES; //touches will pass through the window
+    noNotch.userInteractionEnabled = NO; //they won't pass through the notch cover because that's big and will block touches
+    cover.userInteractionEnabled = YES; //touches will pass through the status bar
     
+    [noNotchW addSubview:noNotch]; //add the notch cover inside the window
     UIStatusBar_Base *statusBar = [self valueForKey:@"_statusBar"];
-    statusBar.tag = 4141411337; //tag SpringBoard's status bar so it's never hidden, TODO: fix two status bars in landscape mode
-    [self.noNotchW addSubview:statusBar];
+    [cover addSubview:statusBar]; //add status bar inside our supporting view
+    [noNotchW addSubview:cover]; //add supporting view inside the window
     
     %orig; //make SpringBoard do whatever it was gonna do before we kicked in and stole the notch
 }
-%end
 
+//our hide and show methods. Add a nice transition
+%new
+- (void)hide:(NSString *)name {
+    [UIView animateWithDuration:1.0 animations:^(void) {
+        noNotchW.alpha = 1;
+        noNotchW.alpha = 0;
+    }];
+}
+%new
+- (void)show:(NSString *)name {
+    [UIView animateWithDuration:1.0 animations:^(void) {
+        noNotchW.alpha = 0;
+        noNotchW.alpha = 1;
+    }];
+}
+%new
+- (void)hideSB:(NSString *)name {
+    [UIView animateWithDuration:1.0 animations:^(void) {
+        cover.alpha = 1;
+        cover.alpha = 0;
+    }];
+}
+%new
+- (void)showSB:(NSString *)name {
+    [UIView animateWithDuration:1.0 animations:^(void) {
+        cover.alpha = 0;
+        cover.alpha = 1;
+    }];
+}
+%end
+//status bar window always visible
 %hook UIStatusBarWindow
 -(void)setHidden:(BOOL)arg1 {
-    %orig(NO); //unhide it
+    %orig(NO);
 }
 %end
+
+//status bar always visible
 %hook UIStatusBar_Base
 -(void)setAlpha:(CGFloat)arg1 {
-    if(self.tag == 4141411337);
-    arg1 = 1;
-    %orig(arg1); //make it visible if ours
+    //if the system wants to show the status bar make sure the notch cover window is also there
+    if (arg1 == 1) {
+        if (noNotchW.alpha == 0)
+            [messagingCenter sendMessageName:@"show" userInfo:nil];
+    }
+    %orig(1);
 }
+
 %end
+
+//align the status bar properly
 %hook _UIStatusBar
 - (void)setFrame:(CGRect)frame {
-    frame.origin.y = -2; //align it correctly
+    frame.origin.y = -2;
     frame.size.height = 32;
     %orig(frame);
 }
@@ -76,9 +126,63 @@
     frame.size.height = 32;
     return frame;
 }
+//make the status bar always white
 -(void)layoutSubviews {
     %orig;
-    self.foregroundColor = [UIColor whiteColor]; //always white
+    self.foregroundColor = [UIColor whiteColor];
 }
 %end
+
+//when we open an app make sure the notch cover is visible
+%hook SpringBoard
+-(void)frontDisplayDidChange:(id)newDisplay {
+    %orig;
+    
+    if ([newDisplay isKindOfClass:%c(SBApplication)]) {
+        if (cover.alpha == 0)
+            [messagingCenter sendMessageName:@"showSB" userInfo:nil];
+        if (noNotchW.alpha == 0)
+            [messagingCenter sendMessageName:@"show" userInfo:nil];
+    }
+    
+}
+%end
+//when control center is opened hide the status bar
+%hook SBControlCenterController
+-(void)presentAnimated:(BOOL)arg1 {
+    if (cover.alpha != 0)
+        [messagingCenter sendMessageName:@"hideSB" userInfo:nil];
+    %orig;
+}
+-(void)presentAnimated:(BOOL)arg1 completion:(id)arg2 {
+    if (cover.alpha != 0)
+        [messagingCenter sendMessageName:@"hideSB" userInfo:nil];
+    %orig;
+}
+//when control center is dismissed show the status bar
+-(void)dismissAnimated:(BOOL)arg1 {
+    if (cover.alpha == 0)
+        [messagingCenter sendMessageName:@"showSB" userInfo:nil];
+    %orig;
+}
+-(void)dismissAnimated:(BOOL)arg1 completion:(id)arg2 {
+    if (cover.alpha == 0)
+        [messagingCenter sendMessageName:@"showSB" userInfo:nil];
+    %orig;
+}
+%end
+
+//get rid of the notch cover when user enters wiggle mode. Can't think of an alternative
+%hook SBEditingDoneButton
+-(id)initWithFrame:(CGRect)arg1 {
+    if (noNotchW.alpha != 0)
+        [messagingCenter sendMessageName:@"hide" userInfo:nil];
+    return %orig;
+}
+%end
+
+//setup our message center
+%ctor {
+    messagingCenter = [CPDistributedMessagingCenter centerNamed:@"com.jakeashacks.noNotch"];
+}
 
