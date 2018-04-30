@@ -12,26 +12,22 @@ UIInterfaceOrientation oldOrientation;
 //our hide and show methods. Add a nice transition
 void hide() {
     [UIView animateWithDuration:1.0 animations:^(void) {
-        noNotchW.alpha = noNotchW.alpha;
         noNotchW.alpha = 0;
     }];
 }
 void show() {
     [UIView animateWithDuration:1.0 animations:^(void) {
-        noNotchW.alpha = noNotchW.alpha;
         noNotchW.alpha = 1;
     }];
 }
 void hideSB() {
     [UIView animateWithDuration:1.0 animations:^(void) {
-        cover.alpha = cover.alpha;
         cover.alpha = 0;
     }];
 }
 void showSB() {
     if (oldOrientation != 1) return;
     [UIView animateWithDuration:1.0 animations:^(void) {
-        cover.alpha = cover.alpha;
         cover.alpha = 1;
     }];
 }
