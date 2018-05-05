@@ -99,10 +99,10 @@ void showSB() {
     //if old orientation isn't equal to current orientation => orientation changed
     if (oldOrientation != [[%c(SpringBoard) sharedApplication] activeInterfaceOrientation]) {
         oldOrientation = [[%c(SpringBoard) sharedApplication] activeInterfaceOrientation];
-        if (oldOrientation == 1 && cover.alpha != 1)
-            showSB();
-        else if (oldOrientation != 1 && cover.alpha != 0)
-            hideSB();
+        if (oldOrientation == 1 && noNotchW.alpha != 1)
+            show();
+        else if (oldOrientation != 1 && noNotchW.alpha != 0)
+            hide();
     }
 }
 
