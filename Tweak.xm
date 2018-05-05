@@ -80,7 +80,7 @@ void showSB() {
     
     [noNotchW addSubview:noNotch]; //add the notch cover inside the window
     UIStatusBar_Base *statusBar = [self valueForKey:@"_statusBar"];
-    statusBar.tag = 414141;
+    ((UIView*)statusBar).tag = 414141;
     [cover addSubview:(UIView*)statusBar]; //add status bar inside our supporting view
     [noNotchW addSubview:cover]; //add supporting view inside the window
     
@@ -123,7 +123,7 @@ void showSB() {
         if (noNotchW.alpha == 0)
             show();
     }
-    if (self.tag == 414141)
+    if (((UIView*)self).tag == 414141)
         %orig(1);
     else
         %orig(arg1);
