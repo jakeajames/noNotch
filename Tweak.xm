@@ -16,6 +16,7 @@ void hide() {
     }];
 }
 void show() {
+    if (oldOrientation != 1) return;
     [UIView animateWithDuration:1.0 animations:^(void) {
         noNotchW.alpha = 1;
     }];
@@ -26,7 +27,6 @@ void hideSB() {
     }];
 }
 void showSB() {
-    if (oldOrientation != 1) return;
     [UIView animateWithDuration:1.0 animations:^(void) {
         cover.alpha = 1;
     }];
@@ -151,6 +151,7 @@ void showSB() {
 }
 %end
 
+
 //when we open an app make sure the notch cover is visible
 /*%hook SpringBoard
 -(void)frontDisplayDidChange:(id)newDisplay {
@@ -208,5 +209,3 @@ void showSB() {
     return %orig;
 }
 %end
-
-
