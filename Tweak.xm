@@ -80,6 +80,7 @@ void showSB() {
     
     [noNotchW addSubview:noNotch]; //add the notch cover inside the window
     UIStatusBar_Base *statusBar = [self valueForKey:@"_statusBar"];
+    statusBar.tag = 414141;
     [cover addSubview:(UIView*)statusBar]; //add status bar inside our supporting view
     [noNotchW addSubview:cover]; //add supporting view inside the window
     
@@ -122,7 +123,10 @@ void showSB() {
         if (noNotchW.alpha == 0)
             show();
     }
-    %orig(1);
+    if (self.tag == 414141)
+        %orig(1);
+    else
+        %orig(arg1);
 }
 
 %end
@@ -180,6 +184,16 @@ void showSB() {
     %orig;
 }
 -(void)dismissAnimated:(BOOL)arg1 completion:(id)arg2 {
+    if (cover.alpha == 0)
+        showSB();
+    %orig;
+}
+-(void)grabberTongueBeganPulling:(id)arg1 withDistance:(double)arg2 andVelocity:(double)arg3 {
+    if (cover.alpha != 0)
+        hideSB();
+    %orig;
+}
+-(void)_didDismiss {
     if (cover.alpha == 0)
         showSB();
     %orig;
