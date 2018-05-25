@@ -2,6 +2,10 @@
 #include <UIKit/UIStatusBar.h>
 #import <CoreGraphics/CoreGraphics.h>
 #include <SpringBoard/SpringBoard.h>
+#include <AppSupport/CPDistributedMessagingCenter.h>
+#import <rocketbootstrap/rocketbootstrap.h>
+
+CPDistributedMessagingCenter *messagingCenter; //message center
 
 UIWindow *noNotchW; //window which will contain everything
 UIView *noNotch; //the black border which will cover the notch
@@ -32,6 +36,10 @@ void showSB() {
     }];
 }
 
+@interface SpringBoard ()
+-(BOOL)isShowingHomescreen;
+@end
+
 @interface UIApplication ()
 -(int)activeInterfaceOrientation;
 @end
@@ -46,7 +54,11 @@ void showSB() {
 @property (nonatomic, retain) UIColor *foregroundColor;
 @end
 
+BOOL isOnSpringBoard() {
+    return [((SpringBoard*)[%c(SpringBoard) sharedApplication]) isShowingHomescreen];
+}
 
+%group SBHooks
 %hook UIStatusBarWindow
 
 - (void)layoutSubviews
@@ -58,6 +70,10 @@ void showSB() {
     CGRect frame = CGRectMake(-50, -16, wholeFrame.size.width+100, wholeFrame.size.height+200); //this is the border which will cover the notch
     
     if (!noNotchW) {
+        [messagingCenter registerForMessageName:@"hide" target:self selector:@selector(hide:)];
+        [messagingCenter registerForMessageName:@"hide2" target:self selector:@selector(hide:)]; //apps need special treatment
+        [messagingCenter registerForMessageName:@"show" target:self selector:@selector(show:)];
+        
         noNotchW = [[UIWindow alloc] initWithFrame:sbFrame]; //window will be as small as the status bar
         cover = [[UIView alloc] initWithFrame:sbFrame]; //the support view
     }
@@ -105,7 +121,19 @@ void showSB() {
             hide();
     }
 }
-
+%new
+- (void)hide:(NSString *)name {
+    if ([name isEqualToString:@"hide2"] && isOnSpringBoard()) return;
+    [UIView animateWithDuration:1.0 animations:^(void) {
+        noNotchW.alpha = 0;
+    }];
+}
+%new
+- (void)show:(NSString *)name {
+    [UIView animateWithDuration:1.0 animations:^(void) {
+        noNotchW.alpha = 1;
+    }];
+}
 %end
 
 //status bar window always visible
@@ -200,7 +228,6 @@ void showSB() {
     %orig;
 }
 %end
-
 //get rid of the notch cover when user enters wiggle mode. Can't think of an alternative
 %hook SBEditingDoneButton
 -(id)initWithFrame:(CGRect)arg1 {
@@ -209,3 +236,63 @@ void showSB() {
     return %orig;
 }
 %end
+%end
+
+%group AppHooks
+//if status bar is hidden => fullscreen app, therefore we need to hide the notch cover
+%hook UIStatusBar_Base
+-(void)setAlpha:(CGFloat)arg1 {
+    if (arg1 == 0)
+        [messagingCenter sendMessageName:@"hide2" userInfo:nil];
+    else
+        [messagingCenter sendMessageName:@"show" userInfo:nil];
+    %orig(arg1);
+}
+-(void)setHidden:(BOOL)arg1 {
+    if (arg1 == YES)
+        [messagingCenter sendMessageName:@"hide2" userInfo:nil];
+    else
+        [messagingCenter sendMessageName:@"show" userInfo:nil];
+    %orig(arg1);
+}
+-(CGFloat)alpha {
+    if (%orig == 0)
+        [messagingCenter sendMessageName:@"hide2" userInfo:nil];
+    else
+        [messagingCenter sendMessageName:@"show" userInfo:nil];
+    return %orig;
+}
+-(BOOL)isHidden {
+    if (%orig == YES)
+        [messagingCenter sendMessageName:@"hide2" userInfo:nil];
+    else
+        [messagingCenter sendMessageName:@"show" userInfo:nil];
+    return %orig;
+}
+%end
+//check again after we reopen the app. This doesn't seem to be working that well
+%hook UIApplicationDelegate
+- (void)applicationDidBecomeActive:(UIApplication *)application {
+    if ([[[[UIApplication sharedApplication] valueForKey:@"statusBarWindow"] valueForKey:@"statusBar"] alpha] == 0 || [[[[UIApplication sharedApplication] valueForKey:@"statusBarWindow"] valueForKey:@"statusBar"] isHidden] == YES)
+        [messagingCenter sendMessageName:@"hide" userInfo:nil];
+    %orig(application);
+}
+%end
+%end
+
+%ctor {
+    messagingCenter = [CPDistributedMessagingCenter centerNamed:@"com.jakeashacks.noNotch"]; //setup our message center
+    rocketbootstrap_distributedmessagingcenter_apply(messagingCenter); //use rocketbootstrap to get around sandbox limits
+    
+    if ([[[NSBundle mainBundle] bundleIdentifier] isEqualToString:@"com.apple.springboard"]) {
+        [messagingCenter runServerOnCurrentThread];
+        %init(SBHooks);
+    }
+    else {
+        %init(AppHooks);
+    }
+}
+
+
+    
+
