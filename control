@@ -1,9 +1,9 @@
-Package: net.iapps4u.nonotch
+Package: com.jakeashacks.noNotch
 Name: noNotch
-Depends: mobilesubstrate
-Version: 0.0.1
+Version: 1.1.1
 Architecture: iphoneos-arm
-Description: An awesome MobileSubstrate tweak!
-Maintainer: Jake James
-Author: Jake James
-Section: Tweaks
+Description: Hides the notch on iPhone X. Issues are present. Source code: https://github.com/jakeajames/noNotch
+Pre-Depends: firmware(>=11.0), mobilesubstrate, com.rpetrich.rocketbootstrap (>= 1.0.6)
+Maintainer: Jake James <jakeashacks@gmail.com>
+Author: Jake James <jakeashacks@gmail.com>
+Section: System
