@@ -6,13 +6,9 @@ Made @Jakeashacks. Minor contributions by @LaughingQuoll. A lot of credits go to
 Feel free to ask any questions on Twitter and to report bugs using the "Issues" tab.
 
 # Changelog
-- Fixed interaction with status bar (TapTapUtils still doesn't seem to work but screen recording and personal hotspot do)
-- Fixed double status bar on control center
-- Can now click "Done" button when in wiggle mode
-- Landscape apps don't have two status bars anymore
+- ALL fullscreen apps are fixed now, not just landscape ones
 
 # TODO
-- Hide notch cover on full screen apps and while watching videos
 - Settings pane
 - Select which apps to enable this on via Settings
 - Fix bugs real iPhone X users have?
